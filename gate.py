@@ -39,7 +39,7 @@ class DataSet():
                 self.data_frame = pd.concat([self.data_frame, data[field]], axis=1)
             self.data_frame.columns = channels
             # unpack metadata
-            self.channel_list = list(metadata['_channels_']['$PnN'].values)
+            self.channel_list = list(metadata['_channels_']['$PnN'].values)[:-1]
         elif data_frame is not None:
             self.data_frame = data_frame
             self.channel_list = data_frame.columns
