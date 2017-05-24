@@ -126,6 +126,7 @@ class PolygonGate(Gate):
 
 if __name__ == '__main__':
     dataset = DataSet('test.fcs')
+    print(dataset.channel_list)
     gate1 = PolygonGate(channel_list=['FSC-A','SSC-A'])
     gate1.define_vertices(dataset.data_frame)
     gate1.save_vertices('vertex2.txt')
