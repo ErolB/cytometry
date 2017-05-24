@@ -39,7 +39,7 @@ class DataSet():
                 self.data_frame = pd.concat([self.data_frame, data[field]], axis=1)
             self.data_frame.columns = channels
             # unpack metadata
-            self.channel_list = list(metadata['_channels_']['$PnN'].values)[:-1]
+            self.channel_list = list(metadata['_channels_']['$PnN'].values)
         elif data_frame is not None:
             self.data_frame = data_frame
             self.channel_list = data_frame.columns
@@ -51,19 +51,24 @@ class Gate():
     def __init__(self, channel_list):
         self.channel_list = channel_list
 
-    def apply(self):  # defined later
-        pass
 
 class PolygonGate(Gate):
     vertex_array = None
 
-    def __init__(self, channel_list, path=None):
-        super().__init__(channel_list)
-        if path:
+    def __init__(self, channel_list=[], path=None):
+        if channel_list:
+            super().__init__(channel_list)
+        elif path:
             vertex_file = open(path, 'r')
             vertices = []
+            find_channels = True  # specifies that the program is reading the channel list
             for line in vertex_file.readlines():
-                x, y = line.split()
+                line = line.strip()  # remove whitespace and newlines
+                if find_channels:
+                    self.channel_list = line.split(',')
+                    find_channels = False
+                    continue
+                x, y = line.split(',')
                 vertices.append([float(x), float(y)])
             self.vertex_array = np.array(vertices)
             vertex_file.close()
@@ -71,7 +76,7 @@ class PolygonGate(Gate):
     def apply(self, data_set, sample_size=1000):
         x = data_set.data_frame[self.channel_list[0]][:sample_size]
         y = data_set.data_frame[self.channel_list[1]][:sample_size]
-        if not self.vertex_array:
+        if self.vertex_array is None:
             self.define_vertices(x,y)
         path1 = Path(self.vertex_array)
         data = np.transpose([x, y])
@@ -89,7 +94,9 @@ class PolygonGate(Gate):
         plt.show()
         return DataSet(data_frame=trimmed_data)  # creates new object
 
-    def define_vertices(self, x, y):
+    def define_vertices(self, data_frame, sample_size=1000):
+        x = data_frame[self.channel_list[0]][:sample_size]
+        y = data_frame[self.channel_list[1]][:sample_size]
         xy = np.vstack((x, y))
         z = gaussian_kde(xy)(xy)
         # create scatter plot
@@ -98,7 +105,7 @@ class PolygonGate(Gate):
         ax.scatter(x, y, c=np.log10(z), s=20, edgecolor='')
         # detect clicks
         ax.set_title('click to build Singlet gate')
-        line, = ax.plot([3000], [0])  # empty line
+        line, = ax.plot([0],[0])  # empty line
         linebuilder = LineBuilder(line)
         plt.show()
         # select data within gate
@@ -109,15 +116,18 @@ class PolygonGate(Gate):
         if self.vertex_array is None:
             print('no vertex set available')
             return
+        line = ','.join(self.channel_list) + '\n'
+        vertex_file.write(line)  # write list of channels
         for row in self.vertex_array:
-            line = str(row[0]) + ' ' + str(row[1]) + '\n'
+            line = str(row[0]) + ',' + str(row[1]) + '\n'
             vertex_file.write(line)
         vertex_file.close()
 
 
 if __name__ == '__main__':
     dataset = DataSet('test.fcs')
-    gate1 = PolygonGate(['FSC-A','SSC-A'])
+    gate1 = PolygonGate(channel_list=['FSC-A','SSC-A'])
+    gate1.define_vertices(dataset.data_frame)
+    gate1.save_vertices('vertex2.txt')
     dataset2 = gate1.apply(dataset)
-    gate1.save_vertices('vertex_file.txt')
 
