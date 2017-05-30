@@ -1,8 +1,10 @@
 import numpy as np
 import fcswrite
+from scipy import linalg as alg
 from scipy.integrate import quad
 from scipy.stats import gaussian_kde
-from gate import DataSet
+import copy
+import matplotlib.pyplot as plt
 
 def load_matrix(path):
     matrix = []
@@ -21,29 +23,34 @@ def save_as_fcs(path, data_frame):
 def apply_matrix(data_matrix, comp_matrix):
     return np.dot(data_matrix, comp_matrix)
 
-def mutual_info(x_data, y_data):
-    # define limits for integration
-    x_min = min(x_data)
-    x_max = max(x_data)
-    y_min = min(y_data)
-    y_max = max(y_data)
-    # define kernel density functions
-    p_x = gaussian_kde(x_data)
-    p_y = gaussian_kde(y_data)
-    p_xy = gaussian_kde(np.vstack((x_data, y_data)))
-    # perform integration
-    def f(x,y):
-        return p_xy((x,y)) * np.log(p_xy((x,y)) / p_x(x)*p_y(y))
-
-    def f2(y):
-        def f3(x):
-            return f(x,y)
-        return quad(f3, x_min, x_max)[0]
-
-    return quad(f2, y_min, y_max)[0]
-
+def minimize_mutual_info(data_set, field1, field2, resolution=0.02):
+    results = []
+    # find correct entry in the matrix
+    row = list(data_set.data_frame.columns).index(field1)
+    column = list(data_set.data_frame.columns).index(field2)
+    # calculate mutual information for all values
+    spillover_matrix = np.diag(np.ones(len(data_set.data_frame.columns)))
+    for num in np.arange(0, 1, resolution):
+        new_spill = spillover_matrix.copy()
+        new_row = spillover_matrix[row]
+        new_row[column] = 0
+        new_row *= (1-num)
+        new_row[column] = num
+        new_spill[row] = new_row
+        original_frame = copy.copy(data_set.data_frame)
+        data_set.apply(new_spill)
+        results.append(data_set.find_mutual_info(field1,field2))
+        data_set.data_frame = original_frame
+    ideal = results.index(min(results)) * resolution
+    new_spill = spillover_matrix.copy()
+    new_row = spillover_matrix[row]
+    new_row[column] = ideal
+    new_row /= float(sum(new_row))
+    new_spill[row] = new_row
+    plt.plot(results)
+    plt.show()
+    return(new_spill)
 
 if __name__ == '__main__':
     x=[1,2,3]
     y=[2,3,-99]
-    print(mutual_info(x,y))

@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy.stats import gaussian_kde
 import scipy.linalg as alg
-from compensation import load_matrix, apply_matrix, save_as_fcs
+from compensation import minimize_mutual_info
 import pandas as pd
 import copy
 
@@ -19,14 +19,13 @@ def create_grid(data_dict, c=10):
         data_set = data_dict[field1]
         for field2 in data_dict.keys():
             sub = plt.subplot(channel_count, channel_count, counter)
-            plt.xlim((-10,10))
-            plt.ylim((-10,10))
+            #plt.xlim((-10,10))
+            #plt.ylim((-10,10))
             # labeling axes
             if ((channel_count-counter) < counter):
                 sub.set_xlabel(field2)
             if (counter%channel_count == 1):
                 sub.set_ylabel(field1)
-            # take sample
             x = data_set.data_frame[field2].values[:1000]
             y = data_set.data_frame[field1].values[:1000]
             # scaling
@@ -44,46 +43,35 @@ def create_grid(data_dict, c=10):
             counter += 1
     plt.show()
 
-def generate_samples(channel_count, event_count, spillover_matrix):
+def generate_samples(channel_count, event_count):
     channels = ['ch'+str(num) for num in range(1, channel_count+1)]
     frame_list = []
-    for channel_num, channel in enumerate(channels):
+    for channel in channels:
         data_array = []
         for num in range(event_count):
             row = []
             for num2 in range(channel_count):
-                if num2 == channel_num:
                     row.append(np.random.lognormal())
-                else:
-                    row.append(0)
             data_array.append(row)
         data_array = np.array(data_array)
-        print(data_array)
-        data_array = np.dot(data_array, spillover_matrix)
         data_frame = pd.DataFrame(data_array)
         data_frame.columns = channels
         frame_list.append(data_frame)
     return frame_list
 
 if __name__ == '__main__':
-    '''
-    spillover = [[0.95, 0.03, 0.02], [0, 0.6, 0.4], [0.01, 0.1, 0.89]]
-    frames = generate_samples(3,10,spillover)
+    spillover = [[0.95, 0.03, 0.02], [0, 0.6, 0.4], [0.2, 0.1, 0.7]]
     comp = alg.inv(spillover)
-    data_dict = {'ch1': DataSet(data_frame=frames[0]), 'ch2': DataSet(data_frame=frames[1]), 'ch3': DataSet(data_frame=frames[2])}
-    fields = ['ch1','ch2','ch3']
+    frames = generate_samples(3,10)
+    #data_dict = {'ch1': DataSet(data_frame=frames[0]), 'ch2': DataSet(data_frame=frames[1]), 'ch3': DataSet(data_frame=frames[2])}
+    data_dict = {}
+    for index, channel in enumerate(frames[0].columns):
+        data_dict[channel] = DataSet(data_frame=frames[index])
+        data_dict[channel].columns = frames[0].columns
     create_grid(data_dict)
-    '''
-    name, fields, spill = load_matrix('CompManual2')
-    comp = alg.inv(spill)
-    data_dict = {name: DataSet('controls/'+file_ref[name]) for name in file_ref.keys()}
-    #create_grid(data_dict)
-    print(fields)
-
-
-    for item in data_dict:
-        new_frame = pd.DataFrame(apply_matrix(data_dict[item].data_frame.loc[:, fields].values, comp))
-        new_frame.columns = fields
-        data_dict[item].data_frame = new_frame
-        save_as_fcs(item+'.fcs',  copy.deepcopy(new_frame))
+    print(minimize_mutual_info(data_dict['ch1'], 'ch3', 'ch2'))
+    print(data_dict['ch1'].find_mutual_info('ch1','ch3'))
+    for data_set in data_dict.values():
+        data_set.apply(spillover)
     create_grid(data_dict)
+    print(data_dict['ch1'].find_mutual_info('ch1', 'ch2'))
