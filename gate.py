@@ -44,6 +44,43 @@ class DataSet():
             self.data_frame = data_frame
             self.channel_list = data_frame.columns
 
+    # applies composition matrix
+    def apply(self, matrix):
+        new_data = np.dot(self.data_frame.values, matrix)
+        self.data_frame = pd.DataFrame(new_data)
+        self.data_frame.columns = self.channel_list
+
+    # calculates the mutual inforamtaion for two columns
+    def find_mutual_info(self, field1, field2, resolution=50):
+        x_data = self.data_frame[field1].values
+        y_data = self.data_frame[field2].values
+        # define limits for integration
+        x_min = min(x_data)
+        x_max = max(x_data)
+        y_min = min(y_data)
+        y_max = max(y_data)
+        # define kernel density functions
+        p_x = gaussian_kde(x_data)
+        p_y = gaussian_kde(y_data)
+        p_xy = gaussian_kde(np.vstack((x_data, y_data)))
+        # perform integration
+        def f(x, y):
+            ans = p_xy((x, y)) * np.log(p_xy((x, y)) / p_x(x) * p_y(y))
+            if np.isnan(ans):
+                print('warning: invalid')
+                return 0
+            else:
+                #print(p_xy((x, y)) / p_x(x) * p_y(y))
+                return ans
+        x_interval = float(x_max - x_min) / resolution
+        y_interval = float(y_max - y_min) / resolution
+        sum = 0
+        for x in np.arange(x_min, x_max, x_interval):
+            for y in np.arange(y_min, y_max, y_interval):
+                sum += f(x, y)
+        sum *= (x_interval * y_interval)
+        return sum
+
 
 class Gate():
     channel_list = []
