@@ -168,4 +168,3 @@ if __name__ == '__main__':
     gate1.define_vertices(dataset.data_frame)
     gate1.save_vertices('vertex2.txt')
     dataset2 = gate1.apply(dataset)
-
