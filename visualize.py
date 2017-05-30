@@ -33,6 +33,7 @@ def create_grid(data_dict, c=10):
             y = [np.arcsinh(item/c) for item in y]
             # generate plot
             xy = np.vstack((x, y))
+            #print(xy)
             print(counter)
             try:
                 z = gaussian_kde(xy)(xy)
@@ -46,32 +47,37 @@ def create_grid(data_dict, c=10):
 def generate_samples(channel_count, event_count):
     channels = ['ch'+str(num) for num in range(1, channel_count+1)]
     frame_list = []
-    for channel in channels:
+    for channel in range(len(channels)):
         data_array = []
         for num in range(event_count):
             row = []
             for num2 in range(channel_count):
-                    row.append(np.random.lognormal())
+                if num2 == channel:
+                    row.append(np.random.lognormal(mean=np.log(1000)))
+                else:
+                    row.append(np.random.lognormal(mean=np.log(50)))
             data_array.append(row)
         data_array = np.array(data_array)
         data_frame = pd.DataFrame(data_array)
         data_frame.columns = channels
         frame_list.append(data_frame)
+        #print(data_frame)
     return frame_list
 
 if __name__ == '__main__':
-    spillover = [[0.95, 0.03, 0.02], [0, 0.6, 0.4], [0.2, 0.1, 0.7]]
+    spillover = [[0.93, 0.09], [0.07, 0.91]]
     comp = alg.inv(spillover)
-    frames = generate_samples(3,10)
+    frames = generate_samples(2,1000)
     #data_dict = {'ch1': DataSet(data_frame=frames[0]), 'ch2': DataSet(data_frame=frames[1]), 'ch3': DataSet(data_frame=frames[2])}
     data_dict = {}
     for index, channel in enumerate(frames[0].columns):
         data_dict[channel] = DataSet(data_frame=frames[index])
         data_dict[channel].columns = frames[0].columns
     create_grid(data_dict)
-    print(minimize_mutual_info(data_dict['ch1'], 'ch3', 'ch2'))
-    print(data_dict['ch1'].find_mutual_info('ch1','ch3'))
+    print(minimize_mutual_info(data_dict['ch1'], 'ch2', 'ch1'))
+    print(data_dict['ch2'].find_mutual_info('ch2','ch1'))
     for data_set in data_dict.values():
         data_set.apply(spillover)
     create_grid(data_dict)
-    print(data_dict['ch2'].find_mutual_info('ch3', 'ch2'))
+    #print(data_dict['ch1'].data_frame)
+    print(data_dict['ch2'].find_mutual_info('ch2', 'ch1'))

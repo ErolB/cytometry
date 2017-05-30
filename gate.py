@@ -52,8 +52,13 @@ class DataSet():
 
     # calculates the mutual inforamtaion for two columns
     def find_mutual_info(self, field1, field2, resolution=50):
-        x_data = self.data_frame[field1].values
-        y_data = self.data_frame[field2].values
+        skip_count = 0.0
+        total = 0.0
+        scaled_frame = self.scale()
+        x_data = scaled_frame[field1].values
+        y_data = scaled_frame[field2].values
+        #print(x_data)
+        #print(y_data)
         # define limits for integration
         x_min = min(x_data)
         x_max = max(x_data)
@@ -63,24 +68,38 @@ class DataSet():
         p_x = gaussian_kde(x_data)
         p_y = gaussian_kde(y_data)
         p_xy = gaussian_kde(np.vstack((x_data, y_data)))
+        #print(np.vstack((x_data, y_data)))
         # perform integration
         def f(x, y):
             ans = p_xy((x, y)) * np.log(p_xy((x, y)) / p_x(x) * p_y(y))
-            if np.isnan(ans):
-                print('warning: invalid')
-                return 0
-            else:
-                #print(p_xy((x, y)) / p_x(x) * p_y(y))
-                return ans
+            #print(p_x(x), p_y(y), p_xy((x,y)))
+            return ans
         x_interval = float(x_max - x_min) / resolution
         y_interval = float(y_max - y_min) / resolution
         sum = 0
         for x in np.arange(x_min, x_max, x_interval):
             for y in np.arange(y_min, y_max, y_interval):
-                sum += f(x, y)
+                value = f(x, y)
+                if not(np.isnan(value) or np.isinf(value)):
+                    sum += value
+                else:
+                    skip_count += 1
+                total += 1
         sum *= (x_interval * y_interval)
+        print('skipped ' + str(skip_count/total))
         return sum
 
+    def scale(self):
+        values = self.data_frame.values
+        scaled_values = []
+        for row in values:
+            new_row = []
+            for entry in row:
+                new_row.append(np.arcsinh(entry)/10)
+            scaled_values.append(new_row)
+        scaled_frame = pd.DataFrame(scaled_values)
+        scaled_frame.columns = self.data_frame.columns
+        return scaled_frame
 
 class Gate():
     channel_list = []

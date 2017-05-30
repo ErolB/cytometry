@@ -33,19 +33,20 @@ def minimize_mutual_info(data_set, field1, field2, resolution=0.02):
     for num in np.arange(0, 1, resolution):
         new_spill = spillover_matrix.copy()
         new_row = spillover_matrix[row]
-        #new_row[column] = 0
-        #new_row *= (1-num)
+        new_row[column] = 0
+        new_row *= (1-num)/sum(new_row)
         new_row[column] = num
         new_spill[row] = new_row
         original_frame = copy.copy(data_set.data_frame)
         data_set.apply(new_spill)
         results.append(data_set.find_mutual_info(field1,field2))
         data_set.data_frame = original_frame
+        print(new_spill)
     ideal = results.index(min(results)) * resolution
     new_spill = spillover_matrix.copy()
     new_row = spillover_matrix[row]
     new_row[column] = ideal
-    #new_row /= float(sum(new_row))
+    new_row *= (ideal/float(sum(new_row)))
     new_spill[row] = new_row
     plt.plot(results)
     plt.show()
