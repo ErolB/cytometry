@@ -65,21 +65,23 @@ def generate_samples(channel_count, event_count):
     return frame_list
 
 if __name__ == '__main__':
-    spillover = [[0.73, 0.10, 0.05],
-                 [0.22, 0.85, 0.02],
-                 [0.05, 0.05, 0.93]]
-    print(alg.inv(spillover))
-    comp = alg.inv(spillover)
-    frames = generate_samples(3,1000)
-    #data_dict = {'ch1': DataSet(data_frame=frames[0]), 'ch2': DataSet(data_frame=frames[1]), 'ch3': DataSet(data_frame=frames[2])}
+    #spillover = [[0.85, 0.10, 0.07],
+    #             [0.10, 0.85, 0.00],
+    #             [0.05, 0.05, 0.93]]
+    #print(alg.inv(spillover))
+    #comp = alg.inv(spillover)
+    #frames = generate_samples(3,1000)
     data_dict = {}
-    for index, channel in enumerate(frames[0].columns):
-        data_dict[channel] = DataSet(data_frame=frames[index])
-        data_dict[channel].columns = frames[0].columns
+    for channel, path in file_ref.items():
+        print(channel)
+        data_dict[channel] = DataSet(path='controls/'+path)
+        data_dict[channel].data_frame = data_dict[channel].data_frame.iloc[:1000,:]
+        print(data_dict[channel].data_frame)
+        data_dict[channel].columns = list(data_dict.keys())
     #create_grid(data_dict)
     #print(data_dict['ch1'].find_mutual_info('ch1','ch2'))
-    for data_set in data_dict.values():
-        data_set.apply(spillover)
+    #for data_set in data_dict.values():
+    #    data_set.apply(spillover)
     #print(minimize_mutual_info(data_dict['ch2'], 'ch2', 'ch1'))
     print(construct_ideal_matrix(data_dict))
     create_grid(data_dict)

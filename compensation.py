@@ -5,6 +5,7 @@ from scipy.integrate import quad
 from scipy.stats import gaussian_kde
 import copy
 import matplotlib.pyplot as plt
+from sklearn.metrics import mutual_info_score
 
 def load_matrix(path):
     matrix = []

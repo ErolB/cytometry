@@ -96,7 +96,7 @@ class DataSet():
         for row in values:
             new_row = []
             for entry in row:
-                new_row.append(np.arcsinh(entry))
+                new_row.append(np.arcsinh(entry/10))
             scaled_values.append(new_row)
         scaled_frame = pd.DataFrame(scaled_values)
         scaled_frame.columns = self.data_frame.columns
