@@ -23,7 +23,7 @@ def save_as_fcs(path, data_frame):
 def apply_matrix(data_matrix, comp_matrix):
     return np.dot(data_matrix, comp_matrix)
 
-def minimize_mutual_info(data_set, field1, field2, resolution=0.02):
+def minimize_mutual_info(data_set, field1, field2, resolution=0.01):
     results = []
     # find correct entry in the matrix
     row = list(data_set.data_frame.columns).index(field1)
@@ -33,24 +33,32 @@ def minimize_mutual_info(data_set, field1, field2, resolution=0.02):
     for num in np.arange(0, 1, resolution):
         new_spill = spillover_matrix.copy()
         new_row = spillover_matrix[row]
-        new_row[column] = 0
-        new_row *= (1-num)/sum(new_row)
+        #new_row[column] = 0
+        #new_row *= (1-num)/sum(new_row)
         new_row[column] = num
         new_spill[row] = new_row
-        original_frame = copy.copy(data_set.data_frame)
-        data_set.apply(new_spill)
-        results.append(data_set.find_mutual_info(field1,field2))
-        data_set.data_frame = original_frame
-        print(new_spill)
-    ideal = results.index(min(results)) * resolution
-    new_spill = spillover_matrix.copy()
-    new_row = spillover_matrix[row]
-    new_row[column] = ideal
-    new_row *= (ideal/float(sum(new_row)))
-    new_spill[row] = new_row
-    plt.plot(results)
+        current_set = copy.deepcopy(data_set)
+        current_set.apply(alg.inv(new_spill))
+        results.append(current_set.find_mutual_info(field1,field2))
+        #print(new_spill)
+    d_results = [results[i + 1] - results[i] for i in range(len(results) - 1)]
+    ideal = d_results.index(min(d_results)) * resolution
+    plt.plot(d_results)
     plt.show()
-    return(new_spill)
+    return(ideal)
+
+def construct_ideal_matrix(data_dict):
+    matrix = np.diag(np.ones(len(data_dict)))
+    channels = list(data_dict.keys())
+    for row in range(len(channels)):
+        for column in range(len(channels)):
+            if row != column:
+                entry = minimize_mutual_info(data_dict[channels[row]], channels[row], channels[column])
+                matrix[row][column] = entry
+    # normalize diagonal
+    for i in range(len(channels)):
+        matrix[i,i] = 2 - sum(matrix[:,i])
+    return matrix
 
 if __name__ == '__main__':
     x=[1,2,3]

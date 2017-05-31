@@ -64,18 +64,19 @@ class DataSet():
         x_max = max(x_data)
         y_min = min(y_data)
         y_max = max(y_data)
+        x_interval = float(x_max - x_min) / resolution
+        y_interval = float(y_max - y_min) / resolution
         # define kernel density functions
         p_x = gaussian_kde(x_data)
         p_y = gaussian_kde(y_data)
         p_xy = gaussian_kde(np.vstack((x_data, y_data)))
+
         #print(np.vstack((x_data, y_data)))
         # perform integration
         def f(x, y):
             ans = p_xy((x, y)) * np.log(p_xy((x, y)) / p_x(x) * p_y(y))
             #print(p_x(x), p_y(y), p_xy((x,y)))
             return ans
-        x_interval = float(x_max - x_min) / resolution
-        y_interval = float(y_max - y_min) / resolution
         sum = 0
         for x in np.arange(x_min, x_max, x_interval):
             for y in np.arange(y_min, y_max, y_interval):
@@ -95,7 +96,7 @@ class DataSet():
         for row in values:
             new_row = []
             for entry in row:
-                new_row.append(np.arcsinh(entry)/10)
+                new_row.append(np.arcsinh(entry))
             scaled_values.append(new_row)
         scaled_frame = pd.DataFrame(scaled_values)
         scaled_frame.columns = self.data_frame.columns
