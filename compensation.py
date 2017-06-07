@@ -42,9 +42,11 @@ def minimize_mutual_info(data_set, field1, field2, resolution=0.01):
         current_set.apply(alg.inv(new_spill))
         results.append(current_set.find_mutual_info(field1,field2))
         #print(new_spill)
-    d_results = [results[i + 1] - results[i] for i in range(len(results) - 1)]
-    ideal = d_results.index(min(d_results)) * resolution
-    plt.plot(d_results)
+    #d_results = [results[i + 1] - results[i] for i in range(len(results) - 1)]
+    ideal = results.index(max(results)) * resolution
+    plt.plot(results)
+    plt.show()
+    plt.plot(results)
     plt.show()
     return(ideal)
 
