@@ -46,31 +46,31 @@ def create_grid(data_dict, c=10):
 
 def generate_samples(channel_count, event_count):
     channels = ['ch'+str(num) for num in range(1, channel_count+1)]
-    frame_list = []
+    frame_dict = {}
     for channel in range(len(channels)):
         data_array = []
         for num in range(event_count):
             row = []
             for num2 in range(channel_count):
                 if num2 == channel:
-                    row.append(np.random.lognormal(mean=np.log(1000)))
+                    row.append(np.random.normal(loc=0))
                 else:
-                    row.append(np.random.lognormal(mean=np.log(50)))
+                    row.append(np.random.normal(loc=0))
             data_array.append(row)
         data_array = np.array(data_array)
         data_frame = pd.DataFrame(data_array)
         data_frame.columns = channels
-        frame_list.append(data_frame)
+        frame_dict[channels[channel]] = DataSet(data_frame=data_frame)
         #print(data_frame)
-    return frame_list
+    return frame_dict
 
 if __name__ == '__main__':
-    #spillover = [[0.85, 0.10, 0.07],
-    #             [0.10, 0.85, 0.00],
-    #             [0.05, 0.05, 0.93]]
-    #print(alg.inv(spillover))
-    #comp = alg.inv(spillover)
-    #frames = generate_samples(3,1000)
+    spillover = [[0.7,0],
+                 [0.3,1]]
+    print(alg.inv(spillover))
+    comp = alg.inv(spillover)
+    data_dict = generate_samples(2,1000)
+    '''
     data_dict = {}
     for channel, path in file_ref.items():
         print(channel)
@@ -80,8 +80,10 @@ if __name__ == '__main__':
         data_dict[channel].columns = list(data_dict.keys())
     #create_grid(data_dict)
     #print(data_dict['ch1'].find_mutual_info('ch1','ch2'))
-    #for data_set in data_dict.values():
-    #    data_set.apply(spillover)
+    '''
+    for data_set in data_dict.values():
+        data_set.apply(spillover)
+
     #print(minimize_mutual_info(data_dict['ch2'], 'ch2', 'ch1'))
     print(construct_ideal_matrix(data_dict))
     create_grid(data_dict)

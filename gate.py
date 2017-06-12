@@ -55,8 +55,14 @@ class DataSet():
         skip_count = 0.0
         total = 0.0
         scaled_frame = self.scale()
-        x_data = scaled_frame[field1].values
-        y_data = scaled_frame[field2].values
+        x_data = self.data_frame[field1].values
+        y_data = self.data_frame[field2].values
+        #print(np.mean(x_data), np.std(x_data))
+        #print(np.mean(y_data), np.std(y_data))
+        x_data -= np.mean(x_data)
+        y_data -= np.mean(y_data)
+        #plt.hist(x_data)
+        #plt.show()
         #print(x_data)
         #print(y_data)
         # define limits for integration
@@ -71,10 +77,12 @@ class DataSet():
         p_y = gaussian_kde(y_data)
         p_xy = gaussian_kde(np.vstack((x_data, y_data)))
 
+        print(p_xy((x_min,y_max)))
+
         #print(np.vstack((x_data, y_data)))
         # perform integration
         def f(x, y):
-            ans = p_xy((x, y)) * np.log(p_xy((x, y)) / p_x(x) * p_y(y))
+            ans = p_xy((x, y)) * np.log(p_xy((x, y)) / (p_x(x) * p_y(y)))
             #print(p_x(x), p_y(y), p_xy((x,y)))
             return ans
         sum = 0
@@ -86,7 +94,7 @@ class DataSet():
                 else:
                     skip_count += 1
                 total += 1
-        sum *= (x_interval * y_interval)
+        sum /= resolution**2
         print('skipped ' + str(skip_count/total))
         return sum
 
