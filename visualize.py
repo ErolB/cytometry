@@ -53,9 +53,9 @@ def generate_samples(channel_count, event_count):
             row = []
             for num2 in range(channel_count):
                 if num2 == channel:
-                    row.append(np.random.normal(loc=1000))
+                    row.append(np.arcsinh(np.random.lognormal(mean=3)))
                 else:
-                    row.append(np.random.normal(loc=0))
+                    row.append(np.arcsinh(np.random.lognormal(mean=0)))
             data_array.append(row)
         data_array = np.array(data_array)
         data_frame = pd.DataFrame(data_array)

@@ -100,8 +100,11 @@ def estimate_mutual_info(data_matrix, resolution=50):
     for x in np.arange(x_min,x_max,x_interval):
         for y in np.arange(y_min,y_max,y_interval):
             total += f(x,y)
-    total /= (resolution**2)
+    total *= (y_interval*x_interval/resolution**2)
     return total
+    '''
+    return integrate.dblquad(f, x_min, x_max, lambda x: y_min, lambda x: y_max)[0]
+'''
 
 def test_y_dist():
     data = generate_data(0,0,1,1)
@@ -133,7 +136,7 @@ if __name__ == '__main__':
     spillover = np.array([[1-true_theta, 0],
                           [true_theta, 1]])
     data = np.dot(spillover, data)
-    #data = np.flipud(data)
+    data = np.flipud(data)
 
     results = []
     test_results = []
@@ -143,7 +146,8 @@ if __name__ == '__main__':
         compensation = np.linalg.inv(spillover)
         new_data = np.dot(compensation, data)
         print(spillover)
-        test_results.append(estimate_mutual_info(new_data))
+        test_results.append(estimate_mutual_info(new_data, resolution=200))
 
     plt.plot(test_results)
     plt.show()
+    print(test_results.index(min(test_results)))
