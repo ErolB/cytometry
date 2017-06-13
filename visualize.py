@@ -53,7 +53,7 @@ def generate_samples(channel_count, event_count):
             row = []
             for num2 in range(channel_count):
                 if num2 == channel:
-                    row.append(np.random.normal(loc=0))
+                    row.append(np.random.normal(loc=1000))
                 else:
                     row.append(np.random.normal(loc=0))
             data_array.append(row)
@@ -65,10 +65,8 @@ def generate_samples(channel_count, event_count):
     return frame_dict
 
 if __name__ == '__main__':
-    spillover = [[0.7,0],
-                 [0.3,1]]
-    print(alg.inv(spillover))
-    comp = alg.inv(spillover)
+    spillover = [[0.75,0],
+                 [0.25,1]]
     data_dict = generate_samples(2,1000)
     '''
     data_dict = {}
@@ -83,9 +81,14 @@ if __name__ == '__main__':
     '''
     for data_set in data_dict.values():
         data_set.apply(spillover)
+    create_grid(data_dict)
 
     #print(minimize_mutual_info(data_dict['ch2'], 'ch2', 'ch1'))
-    print(construct_ideal_matrix(data_dict))
+    spillover = construct_ideal_matrix(data_dict, resolution=0.01)
+    for data_set in data_dict.values():
+        data_set.apply(alg.inv(spillover))
+    print(spillover)
+
     create_grid(data_dict)
     #print(data_dict['ch1'].data_frame)
     #print(data_dict['ch1'].find_mutual_info('ch2', 'ch2'))

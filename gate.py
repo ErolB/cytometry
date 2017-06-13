@@ -46,7 +46,7 @@ class DataSet():
 
     # applies composition matrix
     def apply(self, matrix):
-        new_data = np.dot(self.data_frame.values, matrix)
+        new_data = np.dot(matrix, self.data_frame.values.transpose()).transpose()
         self.data_frame = pd.DataFrame(new_data)
         self.data_frame.columns = self.channel_list
 
@@ -66,18 +66,16 @@ class DataSet():
         #print(x_data)
         #print(y_data)
         # define limits for integration
-        x_min = min(x_data)
-        x_max = max(x_data)
-        y_min = min(y_data)
-        y_max = max(y_data)
+        x_min = -10 * np.std(x_data)
+        x_max = 10 * np.std(x_data)
+        y_min = -10 * np.std(y_data)
+        y_max = 10 * np.std(y_data)
         x_interval = float(x_max - x_min) / resolution
         y_interval = float(y_max - y_min) / resolution
         # define kernel density functions
         p_x = gaussian_kde(x_data)
         p_y = gaussian_kde(y_data)
         p_xy = gaussian_kde(np.vstack((x_data, y_data)))
-
-        print(p_xy((x_min,y_max)))
 
         #print(np.vstack((x_data, y_data)))
         # perform integration
