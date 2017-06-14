@@ -51,8 +51,8 @@ def construct_ideal_matrix(data_dict, resolution=0.02, upper=0.9, lower=0):
     for row in range(len(channels)):
         for column in range(len(channels)):
             if row != column:
-                entry = minimize_mutual_info(data_dict[channels[row]], channels[column], channels[row], resolution=resolution, upper=upper, lower=lower)
-                matrix[row][column] = entry
+                entry = minimize_mutual_info(data_dict[channels[row]], channels[row], channels[column], resolution=resolution, upper=upper, lower=lower)
+                matrix[column][row] = entry
     # normalize diagonal
     for i in range(len(channels)):
         matrix[i,i] = 2 - sum(matrix[:,i])

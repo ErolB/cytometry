@@ -68,7 +68,7 @@ def mutual_info(sigma_x, sigma_y, theta, resolution = 50):
     return total
     '''
     rho = (theta-theta**2)*sigma_x**2 / (new_sigma_x*new_sigma_y)
-    return (-1/2) * np.log10(1-rho**2) /100
+    return (-1/2) * np.log(1-rho**2)
 
 def estimate_mutual_info(data_matrix, resolution=50):
     x_data = data_matrix[0]
@@ -100,11 +100,11 @@ def estimate_mutual_info(data_matrix, resolution=50):
     for x in np.arange(x_min,x_max,x_interval):
         for y in np.arange(y_min,y_max,y_interval):
             total += f(x,y)
-    total *= (y_interval*x_interval/resolution**2)
+    total *= (y_interval*x_interval)
     return total
     '''
     return integrate.dblquad(f, x_min, x_max, lambda x: y_min, lambda x: y_max)[0]
-'''
+    '''
 
 def test_y_dist():
     data = generate_data(0,0,1,1)
@@ -130,24 +130,35 @@ def test_y_dist():
 if __name__ == '__main__':
     sigma_x = 1
     sigma_y = 1
-    data = generate_data(1000,10,sigma_x,sigma_y)
+    data = generate_data(0,0,sigma_x,sigma_y)
 
-    true_theta = 0.25
+    true_theta = 0.3
     spillover = np.array([[1-true_theta, 0],
                           [true_theta, 1]])
     data = np.dot(spillover, data)
-    data = np.flipud(data)
+    #data = np.flipud(data)
 
     results = []
     test_results = []
-    for theta in np.arange(0,1,0.1):
+    for theta in np.arange(0,0.9,0.1):
         spillover = np.array([[1-theta, 0],
                               [theta, 1]])
         compensation = np.linalg.inv(spillover)
         new_data = np.dot(compensation, data)
         print(spillover)
-        test_results.append(estimate_mutual_info(new_data, resolution=200))
 
+        # hypothetical values
+        d_theta = (true_theta-theta) / (1-theta)
+        new_sigma_x, new_sigma_y = recalculate_sigmas(sigma_x, sigma_y, d_theta)
+        covariance = sigma_x**2 * (d_theta-d_theta**2)
+        rho = covariance / (new_sigma_x*new_sigma_y)
+        results.append(rho)
+
+        # real values
+        test_results.append(np.cov(new_data)[0][1] / (np.std(new_data[0])*np.std(new_data[1])))
+
+    plt.plot(results)
+    plt.show()
     plt.plot(test_results)
     plt.show()
     print(test_results.index(min(test_results)))

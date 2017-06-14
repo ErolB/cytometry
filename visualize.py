@@ -65,8 +65,8 @@ def generate_samples(channel_count, event_count):
     return frame_dict
 
 if __name__ == '__main__':
-    spillover = [[0.75,0],
-                 [0.25,1]]
+    spillover = [[0.8,0],
+                 [0.2,1]]
     data_dict = generate_samples(2,1000)
     '''
     data_dict = {}
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     #create_grid(data_dict)
     #print(data_dict['ch1'].find_mutual_info('ch1','ch2'))
     '''
+    create_grid(data_dict)
     for data_set in data_dict.values():
         data_set.apply(spillover)
     create_grid(data_dict)

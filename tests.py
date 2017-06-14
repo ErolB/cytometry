@@ -58,7 +58,7 @@ class MathTests(unittest.TestCase):
 
     def test_rho(self):
         """Tests the function for the correlation coefficient"""
-        plotting = False
+        plotting = True
         threshold = 0.01
         sigma_x = 2
         sigma_y = 3
@@ -157,24 +157,6 @@ class MathTests(unittest.TestCase):
                 plt.show()
         self.assertTrue(success)
 
-    def test_mutual_info(self):
-        original_data_matrix = analytical.generate_data(0,0,1,1,size=1000)
-        results1 = []
-        results2 = []
-        for theta in np.arange(0,0.8,0.1):
-            print(theta)
-            data_matrix = original_data_matrix.copy()
-            spill = [[1-theta, 0],
-                     [theta, 1]]
-            data_matrix = np.dot(spill, data_matrix)
-            results1.append(analytical.estimate_mutual_info(data_matrix, resolution=100))
-            results2.append(analytical.mutual_info(1,1,theta))
-            print(results1[-1]/results2[-1])
-        plt.plot(results1)
-        plt.plot(results2)
-        plt.show()
-        self.assertTrue(True)
-
     def test_data_set_mutual_info(self):
         data_array = analytical.generate_data(0, 0, 1, 1, size=1000)
         theta = 0.4
@@ -210,3 +192,27 @@ class MathTests(unittest.TestCase):
         data_frame.columns = ['x', 'y']
         data_set = gate.DataSet(data_frame=data_frame)
         print('ideal' + str(compensation.minimize_mutual_info(data_set, 'x', 'y')))
+
+    def test_mutual_info(self):
+        original_data_matrix = analytical.generate_data(0,0,1,1,size=10000)
+        results1 = []
+        results2 = []
+        for theta in np.arange(0,1,0.1):
+            print(theta)
+            data_matrix = original_data_matrix.copy()
+            spill = [[1-theta, 0],
+                     [theta, 1]]
+            data_matrix = np.dot(spill, data_matrix)
+            results1.append(analytical.estimate_mutual_info(data_matrix, resolution=100))
+            results2.append(analytical.mutual_info(1,1,theta))
+            print(results1[-1]/results2[-1])
+        plt.plot(results1)
+        plt.plot(results2)
+        plt.show()
+        self.assertTrue(True)
+
+
+suite = unittest.TestSuite()
+math = MathTests()
+suite.addTests(math.test_minimize())
+unittest.TextTestRunner().run(suite)
