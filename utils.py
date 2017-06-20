@@ -1,13 +1,13 @@
+"""
+This module contains essential classes used throughout the package.
+"""
+
 import pandas as pd
-import numpy as np
 import fcsparser
-import os
-import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 from pylab import *
 from matplotlib.path import Path
-import matplotlib.patches as patches
-import matplotlib
+
 
 class LineBuilder:
     def __init__(self, line):
@@ -24,7 +24,8 @@ class LineBuilder:
         self.line.set_data(self.xs, self.ys)
         self.line.figure.canvas.draw()
 
-class DataSet():
+
+class DataSet(object):
     data_frame = None
     channel_list = []
 
@@ -38,17 +39,24 @@ class DataSet():
             for field in channels[1:]:
                 self.data_frame = pd.concat([self.data_frame, data[field]], axis=1)
             self.data_frame.columns = channels
-            # unpack metadata
-            self.channel_list = list(metadata['_channels_']['$PnN'].values)
+            self.channel_list = channels
         elif data_frame is not None:
             self.data_frame = data_frame
             self.channel_list = data_frame.columns
 
     # applies composition matrix
     def apply(self, matrix):
-        new_data = np.dot(matrix, self.data_frame.values.transpose()).transpose()
+        new_data = np.dot(self.data_frame.values, matrix)
         self.data_frame = pd.DataFrame(new_data)
         self.data_frame.columns = self.channel_list
+
+    # reduce the number of channels
+    def select_channels(self, channels):
+        self.channel_list = channels
+        new_frame = pd.DataFrame(columns=channels)
+        for channel in channels:
+            new_frame[channel] = self.data_frame[channel]
+        self.data_frame = new_frame
 
     # calculates the mutual inforamtaion for two columns
     def find_mutual_info(self, field1, field2, resolution=50):
@@ -80,7 +88,8 @@ class DataSet():
         #print(np.vstack((x_data, y_data)))
         # perform integration
         def f(x, y):
-            ans = p_xy((x, y)) * np.log(p_xy((x, y)) / (p_x(x) * p_y(y)))
+            joint = p_xy((x,y))
+            ans = joint * np.log(joint / (p_x(x) * p_y(y)))
             #print(p_x(x), p_y(y), p_xy((x,y)))
             return ans
         sum = 0
@@ -108,7 +117,8 @@ class DataSet():
         scaled_frame.columns = self.data_frame.columns
         return scaled_frame
 
-class Gate():
+
+class Gate(object):
     channel_list = []
 
     def __init__(self, channel_list):
@@ -116,6 +126,7 @@ class Gate():
 
 
 class PolygonGate(Gate):
+
     vertex_array = None
 
     def __init__(self, channel_list=[], path=None):
@@ -129,14 +140,14 @@ class PolygonGate(Gate):
                 line = line.strip()  # remove whitespace and newlines
                 if find_channels:
                     self.channel_list = line.split(',')
-                    find_channels = False
+                    find_channels = False  # indicates that the channels have been found
                     continue
                 x, y = line.split(',')
                 vertices.append([float(x), float(y)])
             self.vertex_array = np.array(vertices)
             vertex_file.close()
 
-    def apply(self, data_set, sample_size=1000):
+    def apply(self, data_set, sample_size=10000):
         x = data_set.data_frame[self.channel_list[0]][:sample_size]
         y = data_set.data_frame[self.channel_list[1]][:sample_size]
         if self.vertex_array is None:
@@ -147,17 +158,17 @@ class PolygonGate(Gate):
         # return new data set
         trimmed_data = pd.DataFrame(data_set.data_frame[:].values[index])
         trimmed_data.columns = data_set.channel_list
-        x = trimmed_data[self.channel_list[0]][:sample_size]
-        y = trimmed_data[self.channel_list[1]][:sample_size]
-        xy = np.vstack((x, y))
-        z = gaussian_kde(xy)(xy)
-        fig1 = plt.figure(num=1, figsize=(15, 15), dpi=80, facecolor='w', edgecolor='k')
-        ax = fig1.add_subplot(111)
-        ax.scatter(x, y, c=np.log10(z), s=20, edgecolor='')
-        plt.show()
+        #x = trimmed_data[self.channel_list[0]][:sample_size]
+        #y = trimmed_data[self.channel_list[1]][:sample_size]
+        #xy = np.vstack((x, y))
+        #z = gaussian_kde(xy)(xy)
+        #fig1 = plt.figure(num=1, figsize=(15, 15), dpi=80, facecolor='w', edgecolor='k')
+        #ax = fig1.add_subplot(111)
+        #ax.scatter(x, y, c=np.log10(z), s=20, edgecolor='')
+        #plt.show()
         return DataSet(data_frame=trimmed_data)  # creates new object
 
-    def define_vertices(self, data_frame, sample_size=1000):
+    def define_vertices(self, data_frame, sample_size=10000):
         x = data_frame[self.channel_list[0]][:sample_size]
         y = data_frame[self.channel_list[1]][:sample_size]
         xy = np.vstack((x, y))
@@ -168,7 +179,7 @@ class PolygonGate(Gate):
         ax.scatter(x, y, c=np.log10(z), s=20, edgecolor='')
         # detect clicks
         ax.set_title('click to build Singlet gate')
-        line, = ax.plot([0],[0])  # empty line
+        line, = ax.plot([],[])  # empty line
         linebuilder = LineBuilder(line)
         plt.show()
         # select data within gate

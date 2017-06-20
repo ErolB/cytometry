@@ -1,6 +1,10 @@
+"""
+This module contains functions for analytically calculating the distributions and mututal information. This is mainly 
+used to verify calculations based on real data.
+"""
+
 import numpy as np
 from matplotlib import pyplot as plt
-import scipy.integrate as integrate
 from scipy.stats import gaussian_kde
 
 # finds the determinant of the covariance matrix
@@ -34,13 +38,6 @@ def p_y(y, sigma_x, sigma_y, theta):
     sigma_x, sigma_y = recalculate_sigmas(sigma_x, sigma_y, theta)
     return (1 / np.sqrt(2*np.pi*sigma_y**2)) * np.exp(-y**2 / (2*sigma_y**2))
 
-'''
-def mutual_info(theta, sigma_x, sigma_y):
-    def f(x,y):
-        return p_joint(x,y,theta,sigma_x,sigma_y) * np.log(p_joint(x,y,theta,sigma_x,sigma_y) / (p_x(x,theta,sigma_x)*p_y(x,y,theta,sigma_x,sigma_y)))
-    return integrate.dblquad(f, -5, 5, lambda x: -5, lambda x: 5)[0]
-'''
-
 def generate_data(mu_x, mu_y, sigma_x, sigma_y, size=10000):
     x_data = []
     y_data = []
@@ -50,23 +47,7 @@ def generate_data(mu_x, mu_y, sigma_x, sigma_y, size=10000):
     return np.vstack((x_data, y_data))
 
 def mutual_info(sigma_x, sigma_y, theta, resolution = 50):
-
     new_sigma_x, new_sigma_y = recalculate_sigmas(sigma_x, sigma_y, theta)
-    '''
-    lower_x_lim = -3 * new_sigma_x
-    upper_x_lim = 3 * new_sigma_x
-    lower_y_lim = -3 * new_sigma_y
-    upper_y_lim = 3 * new_sigma_y
-    x_interval = (upper_x_lim - lower_x_lim) / resolution
-    y_interval = (upper_y_lim - lower_y_lim) / resolution
-    total = 0
-    for x in np.arange(lower_x_lim, upper_x_lim, x_interval):
-        for y in np.arange(lower_y_lim, upper_y_lim, y_interval):
-            total += p_joint(x, y, theta, sigma_x, sigma_y) * np.log(p_joint(x, y, theta, sigma_x, sigma_y)
-                                                                             / (p_x(x, sigma_x, theta)*p_y(y, sigma_x, sigma_y, theta)))
-    total /= resolution**2
-    return total
-    '''
     rho = (theta-theta**2)*sigma_x**2 / (new_sigma_x*new_sigma_y)
     return (-1/2) * np.log(1-rho**2)
 
@@ -75,23 +56,20 @@ def estimate_mutual_info(data_matrix, resolution=50):
     y_data = data_matrix[1]
     x_data -= np.mean(x_data)
     y_data -= np.mean(y_data)
-    x_min = -10 * np.std(x_data)
-    x_max = 10 * np.std(x_data)
-    y_min = -10 * np.std(y_data)
-    y_max = 10 * np.std(y_data)
-    '''
-    #x_min = -10
-    #x_max = 10
-    #y_min = -10
-    #y_max = 10
-    '''
+    x_min = -3 * np.std(x_data)
+    x_max = 3 * np.std(x_data)
+    y_min = -3 * np.std(y_data)
+    y_max = 3 * np.std(y_data)
     x_interval = float(x_max - x_min) / resolution
     y_interval = float(y_max - y_min) / resolution
     x_kde = gaussian_kde(x_data)
     y_kde = gaussian_kde(y_data)
     xy_kde = gaussian_kde(data_matrix)
+    #plt.plot(x_kde(np.arange(x_min, x_max, x_interval)))
+    #plt.show()
     def f(x,y):
-        ans = xy_kde((x,y)) * np.log(xy_kde((x,y)) / (x_kde(x) * y_kde(y)))
+        joint = xy_kde((x,y))
+        ans = joint * np.log(joint / (x_kde(x) * y_kde(y)))
         if np.isnan(ans) or np.isinf(ans):
             return 0
         else:
@@ -102,9 +80,6 @@ def estimate_mutual_info(data_matrix, resolution=50):
             total += f(x,y)
     total *= (y_interval*x_interval)
     return total
-    '''
-    return integrate.dblquad(f, x_min, x_max, lambda x: y_min, lambda x: y_max)[0]
-    '''
 
 def test_y_dist():
     data = generate_data(0,0,1,1)
